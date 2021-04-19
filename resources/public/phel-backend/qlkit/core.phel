@@ -1,23 +1,20 @@
 (ns qlkit-todo\qlkit\core
   (:require qlkit-todo\little-clojure\core :as clj
-            :refer [eprint defmethod-fn atom atom? deref assoc dissoc swap! doall mapv reset!]))
+            :refer [eprint atom atom? deref assoc dissoc swap! doall mapv reset!]))
 
 (defn safe-deref [state]
   (if (atom? state) (deref state) state))
 
 (def read
-  @{:name "read"
-    :dispatch-fn (fn [query-term env state] (first query-term))
+  @{:dispatch-fn (fn [query-term env state] (first query-term))
     :fn-map @{}})
 
 (def mutate
-  @{:name "mutate"
-    :dispatch-fn (fn [a & args] (first a))
+  @{:dispatch-fn (fn [a & args] (first a))
     :fn-map @{}})
 
 (def remote
-  @{:name "remote"
-    :dispatch-fn (fn [a & args] (first a))
+  @{:dispatch-fn (fn [a & args] (first a))
     :fn-map @{}})
 
 (def mount-info (atom @{}))
@@ -84,7 +81,7 @@
                                   :remote remote}
                        :state @{}})
   [(is-equal (parse-with (fn []
-                           (defmethod-fn read :foo
+                           (clj/defmethod read :foo
                              (fn [query-term env state]
                                42)))
                          [:foo])
@@ -92,7 +89,7 @@
 
    (let [x (atom 0)]
      (parse-with (fn []
-                   (defmethod-fn mutate :bar!
+                   (clj/defmethod mutate :bar!
                      (fn [query-term env state]
                        (swap! x inc))))
                  [:bar!])
@@ -104,11 +101,11 @@
    (is-equal
      (mapv |(dissoc $ ::qlkit/env ::qlkit/query)
           (parse-with (fn []
-                        (defmethod-fn read :animals
+                        (clj/defmethod read :animals
                           (fn [query-term env state]
                             (for [animal-id :in (range 3)]
                               (parse-children query-term (assoc env :animal-id animal-id)))))
-                        (defmethod-fn read :name
+                        (clj/defmethod read :name
                           (fn [query-term env state]
                             (get @{0 :duck 1 :cat 2 :dog} (:animal-id env)))))
                       [:animals @{} [:name]]))

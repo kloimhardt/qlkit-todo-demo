@@ -70,7 +70,7 @@
        (php/str_replace "@[" "[")))
 
 (defn get-fn1 [f argsv]
-  (if (and (table? f) (= (into-set (keys f)) (set :dispatch-fn :fn-map :name)))
+  (if (and (table? f) (= (into-set (keys f)) (set :dispatch-fn :fn-map)))
     (let [@{:fn-map fn-map :dispatch-fn dispatch-fn} f
           dispatch-val (apply dispatch-fn argsv)]
       @{:fun (get fn-map dispatch-val) :dispatch-val dispatch-val})
@@ -83,11 +83,14 @@
   (let [@{:fun fun :dispatch-val dispatch-val} (get-fn1 f args)]
     (if fun
       (apply fun args)
-      (eprint (str "No method in multimethod: " (:name f) " " dispatch-val)))))
+      (eprint (str "No method in multimethod for: " dispatch-val)))))
 
 (defn remove-all-methods [mfun]
   (put mfun :fn-map @{}))
 
-(defn defmethod-fn [mfun dispatch-key fn]
+(defn defmethod [mfun dispatch-key fn]
   (put (get mfun :fn-map) dispatch-key fn))
 
+(defn defmulti [dispatch-fn]
+  @{:dispatch-fn dispatch-fn
+    :fn-map @{}})
