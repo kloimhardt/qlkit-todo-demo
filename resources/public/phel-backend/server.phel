@@ -1,0 +1,86 @@
+(ns qlkit-todo\server
+  (:require phel\http)
+  (:require phel\html :refer [html doctype])
+  (:require qlkit-todo\qlkit\core :as ql :refer [eprint])
+  (:require qlkit-todo\parsers))
+
+# ./vendor/bin/phel repl
+# (load "./examples/parsers.phel")
+
+(def eval-atom (ql/atom nil))
+
+(defn read-edn [edn-string]
+  (let [fname (str "tmp" (php/uniqid))
+        phel-string
+        (reduce (fn[s [a b]] (php/str_replace a b s))
+                edn-string
+                [["{" "@{"] ["#uuid" ""] ["," ""] ["(" "["] [")" "]"]])
+        ]
+    (ql/writefile fname (str "(ql/reset! eval-atom " phel-string ")"))
+    (load fname)
+    (php/unlink fname)
+    (ql/deref eval-atom)))
+
+(ql/mount @{:parsers @{:read   ql/read
+                       :mutate ql/mutate}})
+
+(defn endpoint [_]
+  (let [body (php/file_get_contents "php://input")
+        query (read-edn body)
+        result (ql/write-edn (ql/parse-query query))]
+    (eprint "body and result")
+    (eprint body)
+    (eprint result)
+    @{:status  200
+      :body result}))
+
+(defn home-html [cljs-code]
+  (html
+    (doctype :html5)
+    [:html
+     [:head
+      [:meta @{:charset "UTF-8"}]
+      [:meta @{:name "viewport" :content "width=device-width, initial-scale=1"}]
+      [:link @{:rel "shortcut icon" :href "data:,"}]
+      [:link @{:rel "apple-touch-icon" :href "data:,"}]
+      [:title "Qlkit-todo"]]
+     [:body
+      [:div @{:id "app"}]
+      [:script @{:type "application/javascript"
+                 :src "./js/compiled/qlkit_todo.js"}]]]))
+
+(defn home-render [_]
+  @{:status 200
+    :body (home-html nil)})
+
+(defstruct route [method url query page])
+
+(def routes
+  [(route "GET" "/" "" home-render)
+   (route "POST" "/endpoint" "" endpoint)])
+
+(defn route-match [request routes]
+  (let
+      [query (get (get request :uri) :query)
+       altquery (if (nil? query) "" query)
+       route (find
+               (fn [route]
+                 (and
+                   (=
+                     (get route :url)
+                     (get (get request :uri) :path))
+                   (=
+                     (get route :method)
+                     (get request :method))
+                   (=
+                     (get route :query) altquery)))
+               routes)]
+    ((get route :page) request)))
+
+(defn emit-response [response]
+  (let [rsp (http/create-response-from-table response)]
+    (http/emit-response rsp)))
+
+(def request (http/request-from-globals))
+
+(emit-response (route-match request routes))
