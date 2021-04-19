@@ -1,6 +1,7 @@
 (ns qlkit-todo\parsers
-  (:require qlkit-todo\qlkit\core :as ql
-            :refer [eprint defmethod-fn atom deref assoc dissoc swap!]))
+  (:require qlkit-todo\qlkit\core :as ql)
+  (:require qlkit-todo\little-clojure\core
+           :refer [eprint defmethod-fn atom deref assoc dissoc swap!]))
 
 (def sequencer (atom 2))
 

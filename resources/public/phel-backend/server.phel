@@ -2,12 +2,15 @@
   (:require phel\http)
   (:require phel\html :refer [html doctype])
   (:require qlkit-todo\qlkit\core :as ql :refer [eprint])
-  (:require qlkit-todo\parsers))
+  (:require qlkit-todo\parsers)
+  (:require qlkit-todo\little-clojure\core :as clj
+            :refer [eprint atom writefile deref reset!]))
 
 # ./vendor/bin/phel repl
-# (load "./examples/parsers.phel")
+# (load "./phel-backend/server.phel")
+# php -S localhost:8000
 
-(def eval-atom (ql/atom nil))
+(def eval-atom (atom nil))
 
 (defn read-edn [edn-string]
   (let [fname (str "tmp" (php/uniqid))
@@ -16,10 +19,10 @@
                 edn-string
                 [["{" "@{"] ["#uuid" ""] ["," ""] ["(" "["] [")" "]"]])
         ]
-    (ql/writefile fname (str "(ql/reset! eval-atom " phel-string ")"))
+    (clj/writefile fname (str "(reset! eval-atom " phel-string ")"))
     (load fname)
     (php/unlink fname)
-    (ql/deref eval-atom)))
+    (deref eval-atom)))
 
 (ql/mount @{:parsers @{:read   ql/read
                        :mutate ql/mutate}})
@@ -27,7 +30,7 @@
 (defn endpoint [_]
   (let [body (php/file_get_contents "php://input")
         query (read-edn body)
-        result (ql/write-edn (ql/parse-query query))]
+        result (clj/write-edn (ql/parse-query query))]
     (eprint "body and result")
     (eprint body)
     (eprint result)

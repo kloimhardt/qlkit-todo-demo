@@ -1,98 +1,9 @@
-(ns qlkit-todo\qlkit\core)
-
-(def mapv map)
-
-(defn writefile[fname txt]
-  (let [myfile (php/fopen fname "a")
-        code (php/fwrite myfile (str txt "\n"))
-        _ (php/fclose myfile)]
-    txt))
-
-(defn eprint [e]
-  (writefile "klmlog.txt" (print-str e))
-  e)
-
-(defn into-set [coll]
-  (let [empty (set)]
-    (reduce push empty coll)))
-
-(defn into-table [coll]
-  (let [empty @{}]
-    (reduce (fn [m [k v]] (put m k v)) empty coll)))
-
-(defn assoc [tbl k v]
-  (let [tbl-copy (into-table tbl)]
-    (put tbl-copy k v)))
-
-(defn dissoc [tbl & ks]
-  (loop [tbl-copy (into-table tbl)
-         ks ks]
-    (if (empty? ks)
-      tbl-copy
-      (do (unset tbl-copy (first ks))
-          (recur tbl-copy (rest ks))))))
-
-(defn apply [f args]
-  (first (mapv f (mapv tuple args))))
-
-(defn atom [val]
-  (let [a @{:atom-val val}] a))
-
-(defn swap! [a fun]
-  (let [val (fun (:atom-val a))]
-    (put a :atom-val val)
-    val))
-
-(defn reset! [a val]
-  (put a :atom-val val)
-  val)
-
-(defn doall [x] x)
-
-(defn deref [a] (:atom-val a))
-
-(defn atom? [a]
-  (and (table? a) (:atom-val a)))
+(ns qlkit-todo\qlkit\core
+  (:require qlkit-todo\little-clojure\core :as clj
+            :refer [eprint defmethod-fn atom atom? deref assoc dissoc swap! doall mapv reset!]))
 
 (defn safe-deref [state]
   (if (atom? state) (deref state) state))
-
-(def eval-atom (atom nil))
-
-(defn read-edn [edn-string]
-  (let [fname (str "tmp" (php/uniqid))
-        phel-string (php/str_replace "{" "@{" edn-string)]
-    (writefile fname (str "(reset! eval-atom " phel-string ")"))
-    (load fname)
-    (php/unlink fname)
-    (deref eval-atom)))
-
-(defn write-edn [phel-data]
-  (->> (print-str phel-data)
-       (php/str_replace "@{" "{")
-       (php/str_replace "@[" "[")))
-
-(defn get-fn1 [f argsv]
-  (if (and (table? f) (= (into-set (keys f)) (set :dispatch-fn :fn-map :name)))
-    (let [@{:fn-map fn-map :dispatch-fn dispatch-fn} f
-          dispatch-val (apply dispatch-fn argsv)]
-      @{:fun (get fn-map dispatch-val) :dispatch-val dispatch-val})
-    @{:fun f :dispatch-val nil}))
-
-(defn get-fn [f & args]
-  (:fun (get-fn1 f args)))
-
-(defn dispatch [f & args]
-  (let [@{:fun fun :dispatch-val dispatch-val} (get-fn1 f args)]
-    (if fun
-      (apply fun args)
-      (eprint (str "No method in multimethod: " (:name f) " " dispatch-val)))))
-
-(defn remove-all-methods [mfun]
-  (put mfun :fn-map @{}))
-
-(defn defmethod-fn [mfun dispatch-key fn]
-  (put (get mfun :fn-map) dispatch-key fn))
 
 (def read
   @{:name "read"
@@ -122,15 +33,15 @@
 (defn parse-query-term [query-term env]
   (let [@{:state state :parsers parsers} (deref mount-info)
         @{:read read :mutate mutate :remote remote} parsers
-        mutate-fn (get-fn mutate query-term env state)]
+        mutate-fn (clj/get-fn mutate query-term env state)]
     (if (or (not (mutation-query-term? query-term))
             mutate-fn
-            (get-fn remote query-term state))
+            (clj/get-fn remote query-term state))
       (actualize (cond
                    (mutation-query-term? query-term)
                    (when mutate-fn (mutate-fn query-term env state))
                    read
-                   (dispatch read query-term env (safe-deref state))
+                   (clj/dispatch read query-term env (safe-deref state))
                    true nil))
       (warning (str "[QlKit] mutate! query must have either a mutate or a remote parser: "
                     (print-str query-term))))))
@@ -141,7 +52,7 @@
              (parse-query-term query-term env)))))
 
 (defn parse-query-into-map [query env]
-  (into-table
+  (clj/into-table
     (mapv tuple (mapv first query) (parse-query query env))))
 
 (defn parse-children [query-term env]
@@ -161,9 +72,9 @@
   (= a b))
 
 (defn parse-with [fun query-term]
-  (remove-all-methods read)
-  (remove-all-methods mutate)
-  (remove-all-methods remote)
+  (clj/remove-all-methods read)
+  (clj/remove-all-methods mutate)
+  (clj/remove-all-methods remote)
   (fun)
   (parse-query-term query-term @{}))
 
