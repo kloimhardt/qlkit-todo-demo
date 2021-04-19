@@ -2,7 +2,7 @@
   (:require phel\http)
   (:require phel\html :refer [html doctype])
   (:require qlkit-todo\qlkit\core :as ql :refer [eprint])
-  (:require qlkit-todo\parsers)
+  (:require qlkit-todo\parsers :as parsers)
   (:require qlkit-todo\little-clojure\core :as clj
             :refer [eprint atom writefile deref reset!]))
 
@@ -24,8 +24,8 @@
     (php/unlink fname)
     (deref eval-atom)))
 
-(ql/mount @{:parsers @{:read   ql/read
-                       :mutate ql/mutate}})
+(ql/mount @{:parsers @{:read   parsers/read
+                       :mutate parsers/mutate}})
 
 (defn endpoint [_]
   (let [body (php/file_get_contents "php://input")

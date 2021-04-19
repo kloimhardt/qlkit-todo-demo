@@ -5,18 +5,6 @@
 (defn safe-deref [state]
   (if (atom? state) (deref state) state))
 
-(def read
-  @{:dispatch-fn (fn [query-term env state] (first query-term))
-    :fn-map @{}})
-
-(def mutate
-  @{:dispatch-fn (fn [a & args] (first a))
-    :fn-map @{}})
-
-(def remote
-  @{:dispatch-fn (fn [a & args] (first a))
-    :fn-map @{}})
-
 (def mount-info (atom @{}))
 
 (defn warning [msg]
@@ -64,6 +52,14 @@
             (assoc args :version new-version))
     (when-not (:server? args)
       (refresh true))))
+
+# ------------ tests -----------------
+
+(def read (clj/defmulti (fn [query-term env state] (first query-term))))
+
+(def mutate (clj/defmulti (fn [a & args] (first a))))
+
+(def remote (clj/defmulti (fn [a & args] (first a))))
 
 (defn is-equal [a b]
   (= a b))
