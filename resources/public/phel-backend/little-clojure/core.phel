@@ -16,6 +16,9 @@
   (let [empty (set)]
     (reduce push empty coll)))
 
+(defn set-contains? [st el]
+  (if (= (set) (intersection st (set el))) nil el))
+
 (defn into-table [coll]
   (let [empty @{}]
     (reduce (fn [m [k v]] (put m k v)) empty coll)))

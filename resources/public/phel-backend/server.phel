@@ -3,6 +3,7 @@
   (:require phel\html :refer [html doctype])
   (:require qlkit-todo\qlkit\core :as ql :refer [eprint])
   (:require qlkit-todo\parsers :as parsers)
+  (:require qlkit-todo\parsers-db :as parsers-db)
   (:require qlkit-todo\little-clojure\core :as clj
             :refer [eprint atom writefile deref reset!]))
 
@@ -17,15 +18,11 @@
         phel-string
         (reduce (fn[s [a b]] (php/str_replace a b s))
                 edn-string
-                [["{" "@{"] ["#uuid" ""] ["," ""] ["(" "["] [")" "]"]])
-        ]
+                [["{" "@{"] ["#uuid" ""] ["," ""] ["(" "["] [")" "]"]])]
     (clj/writefile fname (str "(reset! eval-atom " phel-string ")"))
     (load fname)
     (php/unlink fname)
     (deref eval-atom)))
-
-(ql/mount @{:parsers @{:read   parsers/read
-                       :mutate parsers/mutate}})
 
 (defn endpoint [_]
   (let [body (php/file_get_contents "php://input")
@@ -84,6 +81,11 @@
   (let [rsp (http/create-response-from-table response)]
     (http/emit-response rsp)))
 
-(def request (http/request-from-globals))
-
-(emit-response (route-match request routes))
+(let [request (http/request-from-globals)
+      conn (comment (php/mysqli_connect
+                      "localhost" "mkloim" "mkloimpwd" "h37u320_menagerie"))]
+  (ql/mount @{:parsers @{:read   parsers-db/read
+                         :mutate parsers-db/mutate}})
+  (comment (parsers-db/create-tables-if-necessary conn))
+  (emit-response (route-match request routes))
+  (comment (php/mysqli_close conn)))
