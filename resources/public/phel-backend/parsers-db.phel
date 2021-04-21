@@ -11,7 +11,7 @@
 
 (defn conn-mock []
   (php/mysqli_connect
-                "localhost" "mkloim" "mkloimpwd" "h37u320_menagerie"))
+    "localhost" "mkloim" "mkloimpwd" "h37u320_menagerie"))
 
 (defn conn [] (:conn (deref ql/mount-info)))
 
@@ -24,19 +24,15 @@
   (let [tables2d (db/query conn "show tables")
         table-set (clj/into-set (mapv first tables2d))
         new-table-name "todos"
-        qry (str "CREATE TABLE " new-table-name
-                 "(id SERIAL PRIMARY KEY,
-                   text text not null,
-                   timestamp TIMESTAMP not null DEFAULT now())")]
+        qry (php/sprintf
+              "CREATE TABLE %s
+               (id SERIAL PRIMARY KEY,
+                text text not null,
+                timestamp TIMESTAMP not null DEFAULT now())"
+              new-table-name)]
     (when-not (clj/set-contains? table-set new-table-name)
       (eprint (str "Creating new table " new-table-name))
       (php/mysqli_query conn qry))))
-
-(def sequencer (atom 3))
-
-(def todos (atom @{1 @{:db/id 1 :todo/text "\"walk the dog\""}
-                   2 @{:db/id 2 :todo/text "\"pay the bills\""}
-                   3 @{:db/id 3 :todo/text "\"iron the curtains\""}}))
 
 (def read (clj/defmulti (fn [query-term env state] (first query-term))))
 
@@ -74,16 +70,16 @@
         todo-id))))
 
 (defn db-insert-text [text]
-  (let [qry (str "INSERT INTO todos (text) VALUES (" (quote-string text) ")")]
-    (query qry)
-    (first (mapv |(get $ "LAST_INSERT_ID()") (query "select LAST_INSERT_ID()")))))
+  (query (php/sprintf "INSERT INTO todos (text) VALUES (%s)"
+                      (quote-string text)))
+  (first (mapv |(get $ "LAST_INSERT_ID()") (query "select LAST_INSERT_ID()"))))
 
 (clj/defmethod mutate :todo/new!
   (fn [query-term env _]
     (let [[dispatch-key params] query-term
           @{:db/id db/id :todo/text todo/text} params
           permanent-id (db-insert-text todo/text)]
-      [(str "#uuid \"" id "\"") permanent-id])))
+      [(str "#uuid " (quote-string id)) permanent-id])))
 
 (defn db-delete-record [id]
   (query (str "delete from todos where id=" id)))
