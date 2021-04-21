@@ -82,10 +82,11 @@
     (http/emit-response rsp)))
 
 (let [request (http/request-from-globals)
-      conn (comment (php/mysqli_connect
-                      "localhost" "mkloim" "mkloimpwd" "h37u320_menagerie"))]
+      conn (php/mysqli_connect
+             "localhost" "mkloim" "mkloimpwd" "h37u320_menagerie")]
   (ql/mount @{:parsers @{:read   parsers-db/read
-                         :mutate parsers-db/mutate}})
-  (comment (parsers-db/create-tables-if-necessary conn))
+                         :mutate parsers-db/mutate}
+              :conn conn})
+  (parsers-db/create-tables-if-necessary conn)
   (emit-response (route-match request routes))
-  (comment (php/mysqli_close conn)))
+  (php/mysqli_close conn))
