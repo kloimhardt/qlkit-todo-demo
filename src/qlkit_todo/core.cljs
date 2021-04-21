@@ -3,7 +3,8 @@
   (:require [qlkit.core :as ql]
             [qlkit-renderer.core :refer [transact! update-state!] :refer-macros [defcomponent]]
             [goog.dom :refer [getElement]]
-            [qlkit-todo.parsers :refer [read mutate remote sync]]
+            ;;[qlkit-todo.parsers :refer [read mutate remote sync]]
+            [qlkit-todo.parsers-db :refer [read mutate remote sync] :as parsers-db]
             [qlkit-material-ui.core :refer [enable-material-ui!]]
             [cljs-http.client :as http :refer [post]]
             [cljs.reader :refer [read-string]]))
@@ -58,8 +59,4 @@
                             :remote remote
                             :sync   sync}})
 
-(comment
-
-  (def conn js/window.conn)
-  (js->clj (.exec conn "select \"hello world\"") :keywordize-keys true)
-  )
+(parsers-db/create-tables-if-necessary)
