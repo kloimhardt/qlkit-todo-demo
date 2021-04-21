@@ -50,6 +50,8 @@
 
 (swap! app-state assoc :conn js/window.conn)
 
+(parsers-db/create-tables-if-necessary js/window.conn)
+
 (ql/mount {:component      TodoList
            :dom-element    (getElement "app")
            :state          app-state
@@ -59,4 +61,3 @@
                             :remote remote
                             :sync   sync}})
 
-(parsers-db/create-tables-if-necessary)

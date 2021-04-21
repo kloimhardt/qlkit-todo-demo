@@ -6,19 +6,21 @@
 
 (defn conn [] (get @(get (deref ql/mount-info) :state) :conn))
 
+(defn quote-string [text] (str "\"" text "\""))
+
 (defn query [txt]
   (js->clj (.exec (conn) txt) :keywordize-keys true))
 
-(defn table-set []
+(defn table-set [conn]
   (let [q "SELECT name FROM sqlite_master
     WHERE type IN (\"table\",\"view\")
     AND name NOT LIKE \"sqlite_%\" ORDER BY 1"]
-    (into #{} (first (:values (first (query q)))))))
+    (into #{} (first (:values (first (.exec conn q)))))))
 
 (def format gstring/format)
 
-(defn create-tables-if-necessary []
-  (let [table-set (table-set)
+(defn create-tables-if-necessary [conn] ;; klm TODO use [IF NOT EXISTS]
+  (let [table-set (table-set conn)
         new-table-name "todos"
         qry (format
               "CREATE TABLE %s
@@ -27,49 +29,54 @@
               new-table-name)]
     (when-not (contains? table-set new-table-name)
       (print (str "Creating new table " new-table-name))
-      (query qry))))
-
-(comment
-  (create-tables-if-necessary)
-(gstring/format "a %s" "b")
-  (def conn js/window.conn)
-  (js->clj (.exec (conn) "select \"hello world\"") :keywordize-keys true)
-  (query "show tables")
-  (.. (conn) (tables))
-  (def u "SELECT name FROM sqlite_master
-    WHERE type IN (\"table\",\"view\")
-    AND name NOT LIKE \"sqlite_%\" ORDER BY 1")
-  (.exec (conn) u)
-  )
+      (.exec conn qry))))
 
 (defmulti read (fn [qterm & _] (first qterm)))
 
+(defn fvf [x]
+  (first (:values (first x))))
+
+(defn db-get-ids []
+  (fvf (query "select id from todos")))
+
 (defmethod read :qlkit-todo/todos
   [[dispatch-key params :as query-term] env {:keys [:todo/by-id] :as state}]
-  (println "read :qlkit-todo/todos" state)
+  (println "read :qlkit-todo/todos" (db-get-ids))
   (let [{:keys [todo-id]} params]
     (if todo-id
       [(parse-children query-term (assoc env :todo-id todo-id))]
       (for [id (keys by-id)]
         (parse-children query-term (assoc env :todo-id id))))))
 
-(defmethod read :db/id
-  [query-term {:keys [todo-id] :as env} state]
-  (println "read :db/id" state)
-  (when (get-in state [:todo/by-id todo-id])
-      todo-id))
+(defn db-get-text [id]
+  (first (fvf (query (str "select text from todos where id=" id)))))
 
 (defmethod read :todo/text
   [query-term {:keys [todo-id] :as env} state]
-  (println "read :todo/text" state)
+  ;;(println "read :todo/text" (db-get-text todo-id))
   (get-in state [:todo/by-id todo-id :todo/text]))
+
+(defn db-get-id [id]
+  (first (fvf (query (str "select id from todos where id=" id)))))
+
+(defmethod read :db/id
+  [query-term {:keys [todo-id] :as env} state]
+  ;;(println "read :db/id" (db-get-id todo-id))
+  (when (get-in state [:todo/by-id todo-id])
+      todo-id))
 
 (defmulti mutate (fn [qterm & _] (first qterm)))
 
+(defn db-insert-text [text]
+  (query (format "INSERT INTO todos (text) VALUES (%s)"
+                 (quote-string text)))
+  (let [local-id (first (fvf (query "SELECT last_insert_rowid()")))]
+    {:desc "insert" :local-id local-id :txt (db-get-text local-id)}))
+
 (defmethod mutate :todo/new!
   [[dispatch-key params :as query-term] env state-atom]
-  (println "mutate :todo/new!" @state-atom)
-  (let [{:keys [:db/id]} params]
+  (let [{:keys [:db/id :todo/text]} params]
+    ;;(println "mutate :todo/new!" (db-insert-text text))
     (swap! state-atom assoc-in [:todo/by-id id] params)))
 
 (defmethod mutate :todo/delete!
