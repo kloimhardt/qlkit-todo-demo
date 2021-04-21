@@ -45,6 +45,8 @@
       [:link @{:rel "apple-touch-icon" :href "data:,"}]
       [:title "Qlkit-todo"]]
      [:body
+      [:script @{:src "sql-wasm.js"}]
+      [:script @{:src "initsql.js"}]
       [:div @{:id "app"}]
       [:script @{:type "application/javascript"
                  :src "./js/compiled/qlkit_todo.js"}]]]))

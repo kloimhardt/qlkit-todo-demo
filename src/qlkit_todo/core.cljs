@@ -47,6 +47,8 @@
           (print "server error: " body)
           (callback (read-string body))))))
 
+(swap! app-state assoc :conn js/window.conn)
+
 (ql/mount {:component      TodoList
            :dom-element    (getElement "app")
            :state          app-state
@@ -55,3 +57,9 @@
                             :mutate mutate
                             :remote remote
                             :sync   sync}})
+
+(comment
+
+  (def conn js/window.conn)
+  (js->clj (.exec conn "select \"hello world\"") :keywordize-keys true)
+  )
