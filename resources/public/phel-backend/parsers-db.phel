@@ -1,0 +1,93 @@
+(ns qlkit-todo\parsers-db
+  (:require qlkit-todo\qlkit\core :as ql)
+  (:require qlkit-todo\little-clojure\core :as clj
+            :refer [eprint atom deref assoc dissoc swap! mapv])
+  (:require qlkit-todo\little-clojure\db))
+
+(def dev false)
+
+# (def dev true)
+# (load "./phel-backend/parsers-db.phel")
+
+(defn conn-mock []
+  (php/mysqli_connect
+    "localhost" "mkloim" "mkloimpwd" "h37u320_menagerie"))
+
+(defn conn [] (:conn (deref ql/mount-info)))
+
+(defn quote-string [text] (str "\"" text "\""))
+
+(defn query [txt]
+  (php/mysqli_query (if dev (conn-mock) (conn)) txt))
+
+(defn create-tables-if-necessary [conn]
+  (let [tables2d (db/query conn "show tables")
+        table-set (clj/into-set (mapv first tables2d))
+        new-table-name "todos"
+        qry (php/sprintf
+              "CREATE TABLE %s
+               (id SERIAL PRIMARY KEY,
+                text text not null,
+                timestamp TIMESTAMP not null DEFAULT now())"
+              new-table-name)]
+    (when-not (clj/set-contains? table-set new-table-name)
+      (eprint (str "Creating new table " new-table-name))
+      (php/mysqli_query conn qry))))
+
+(def read (clj/defmulti (fn [query-term env state] (first query-term))))
+
+(def mutate (clj/defmulti (fn [a & args] (first a))))
+
+(defn db-get-ids []
+  (mapv |(get $ "id") (query "select id from todos")))
+
+(clj/defmethod read :qlkit-todo/todos
+  (fn [query-term env _]
+    (let [[_ params] query-term
+          @{:todo-id todo-id} params]
+      (if todo-id
+        [(ql/parse-children query-term (assoc env :todo-id todo-id))]
+        (for [id :in (db-get-ids)]
+          (ql/parse-children query-term (assoc env :todo-id id)))))))
+
+(defn db-get-text [id]
+  (first (mapv |(get $ "text")
+               (query (str "select text from todos where id=" id)))))
+
+(clj/defmethod read :todo/text
+  (fn [query-term env _]
+    (let [@{:todo-id todo-id} env]
+      (quote-string (db-get-text todo-id)))))
+
+(defn db-get-id [id]
+  (first (mapv |(get $ "id")
+               (query (str "select id from todos where id=" id)))))
+
+(clj/defmethod read :db/id
+  (fn [query-term env _]
+    (let [@{:todo-id todo-id} env]
+      (when (db-get-id todo-id)
+        todo-id))))
+
+(defn db-insert-text [text]
+  (query (php/sprintf "INSERT INTO todos (text) VALUES (%s)"
+                      (quote-string text)))
+  (first (mapv |(get $ "LAST_INSERT_ID()") (query "select LAST_INSERT_ID()"))))
+
+(defn make-uuid [txt]
+  (str "#uuid " (quote-string txt)))
+
+(clj/defmethod mutate :todo/new!
+  (fn [query-term env _]
+    (let [[dispatch-key params] query-term
+          @{:db/id db/id :todo/text todo/text} params
+          permanent-id (db-insert-text todo/text)]
+      [(make-uuid id) permanent-id])))
+
+(defn db-delete-record [id]
+  (query (str "delete from todos where id=" id)))
+
+(clj/defmethod mutate :todo/delete!
+  (fn [query-term env _]
+    (let [@{:todo-id todo-id} env]
+      (db-delete-record todo-id))))

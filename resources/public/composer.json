@@ -1,0 +1,14 @@
+{
+    "name": "kloimhardt/bb-web",
+    "type": "project",
+    "require": {
+        "phel-lang/phel-lang": "^0.2.0"
+    },
+    "extra": {
+        "phel": {
+            "loader": {
+                "qlkit-todo\\": "phel-backend/"
+            }
+        }
+    }
+}

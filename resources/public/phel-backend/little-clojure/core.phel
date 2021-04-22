@@ -1,0 +1,99 @@
+(ns qlkit-todo\little-clojure\core)
+
+(def mapv map)
+
+(defn writefile[fname txt]
+  (let [myfile (php/fopen fname "a")
+        code (php/fwrite myfile (str txt "\n"))
+        _ (php/fclose myfile)]
+    txt))
+
+(defn eprint [e]
+  (writefile "klmlog.txt" (print-str e))
+  e)
+
+(defn into-set [coll]
+  (let [empty (set)]
+    (reduce push empty coll)))
+
+(defn set-contains? [st el]
+  (if (= (set) (intersection st (set el))) nil el))
+
+(defn into-table [coll]
+  (let [empty @{}]
+    (reduce (fn [m [k v]] (put m k v)) empty coll)))
+
+(defn assoc [tbl k v]
+  (let [tbl-copy (into-table tbl)]
+    (put tbl-copy k v)))
+
+(defn dissoc [tbl & ks]
+  (loop [tbl-copy (into-table tbl)
+         ks ks]
+    (if (empty? ks)
+      tbl-copy
+      (do (unset tbl-copy (first ks))
+          (recur tbl-copy (rest ks))))))
+
+(defn apply [f args]
+  (first (mapv f (mapv tuple args))))
+
+(defn atom [val]
+  (let [a @{:atom-val val}] a))
+
+(defn swap! [a fun]
+  (let [val (fun (:atom-val a))]
+    (put a :atom-val val)
+    val))
+
+(defn reset! [a val]
+  (put a :atom-val val)
+  val)
+
+(defn doall [x] x)
+
+(defn deref [a] (:atom-val a))
+
+(defn atom? [a]
+  (and (table? a) (:atom-val a)))
+
+(def eval-atom (atom nil))
+
+(defn read-edn [edn-string]
+  (let [fname (str "tmp" (php/uniqid))
+        phel-string (php/str_replace "{" "@{" edn-string)]
+    (writefile fname (str "(reset! eval-atom " phel-string ")"))
+    (load fname)
+    (php/unlink fname)
+    (deref eval-atom)))
+
+(defn write-edn [phel-data]
+  (->> (print-str phel-data)
+       (php/str_replace "@{" "{")
+       (php/str_replace "@[" "[")))
+
+(defn get-fn1 [f argsv]
+  (if (and (table? f) (= (into-set (keys f)) (set :dispatch-fn :fn-map)))
+    (let [@{:fn-map fn-map :dispatch-fn dispatch-fn} f
+          dispatch-val (apply dispatch-fn argsv)]
+      @{:fun (get fn-map dispatch-val) :dispatch-val dispatch-val})
+    @{:fun f :dispatch-val nil}))
+
+(defn get-fn [f & args]
+  (:fun (get-fn1 f args)))
+
+(defn dispatch [f & args]
+  (let [@{:fun fun :dispatch-val dispatch-val} (get-fn1 f args)]
+    (if fun
+      (apply fun args)
+      (eprint (str "No method in multimethod for: " dispatch-val)))))
+
+(defn remove-all-methods [mfun]
+  (put mfun :fn-map @{}))
+
+(defn defmethod [mfun dispatch-key fn]
+  (put (get mfun :fn-map) dispatch-key fn))
+
+(defn defmulti [dispatch-fn]
+  @{:dispatch-fn dispatch-fn
+    :fn-map @{}})
