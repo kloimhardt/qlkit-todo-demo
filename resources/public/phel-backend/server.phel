@@ -1,7 +1,7 @@
 (ns qlkit-todo\server
   (:require phel\http)
   (:require phel\html :refer [html doctype])
-  (:require qlkit-todo\qlkit\core :as ql :refer [eprint])
+  (:require qlkit-todo\qlkit\core :as ql)
   # (:require qlkit-todo\parsers :as parsers)
   (:require qlkit-todo\parsers-db :as parsers-db)
   (:require qlkit-todo\little-clojure\core :as clj
@@ -31,9 +31,6 @@
   (let [body (php/file_get_contents "php://input")
         query (read-edn body)
         result (clj/write-edn (ql/parse-query query))]
-    (eprint "body and result")
-    (eprint body)
-    (eprint result)
     @{:status  200
       :body result}))
 

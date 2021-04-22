@@ -1,21 +1,12 @@
-# qlkit-todo-demo
-
-open terminal
-clojure -m figwheel.main -b dev -r
-
-open another terminal
-copy composer.phar into resources/public
-cd resources/public
-php composer.phar install
-php -S localhost:8000
-opend http://localhost:8000/
-
+# qlkit-todo-demo with Phel backend
 
 This is a "batteries included" demo of qlkit- [Try a live version here](http://forwardblockchain.com/qlkit-todomvc/)
 
+This particular fork and brach provides a [Phel](https://phel-lang.org) backend.
+
 Please read the [recommended qlkit introductory article](https://medium.com/p/79b7b118ddac) for a walkthrough of this application.
 
-## Setup
+## Setup for Clojurescript development
 
 To get an interactive development environment run:
 
@@ -29,6 +20,22 @@ get a Browser Connected REPL. An easy way to try it is:
     (js/alert "Am I connected?")
 
 and you should see an alert in the browser window.
+
+## Setup for additional Phel backend
+
+```
+copy composer.phar into resources/public
+cd resources/public
+php composer.phar install
+php -S localhost:8000
+open http://localhost:8000/
+close http://localhost:9500/
+```
+## Clojurescript compilation for poduction
+
+```
+clj -m figwheel.main -O advanced -bo dev
+```
 
 ---
 _Copyright (c) Conrad Barski. All rights reserved._
