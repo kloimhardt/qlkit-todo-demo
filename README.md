@@ -1,5 +1,16 @@
 # qlkit-todo-demo
 
+open terminal
+clojure -m figwheel.main -b dev -r
+
+open another terminal
+copy composer.phar into resources/public
+cd resources/public
+php composer.phar install
+php -S localhost:8000
+opend http://localhost:8000/
+
+
 This is a "batteries included" demo of qlkit- [Try a live version here](http://forwardblockchain.com/qlkit-todomvc/)
 
 Please read the [recommended qlkit introductory article](https://medium.com/p/79b7b118ddac) for a walkthrough of this application.
