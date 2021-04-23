@@ -57,7 +57,9 @@
 
 (def routes
   [(route "GET" "/todo.php" "" home-render)
-   (route "POST" "/todo.php" "endpoint=" endpoint)])
+   (route "POST" "/todo.php" "endpoint=" endpoint)
+   (route "GET" "/" "" home-render)
+   (route "POST" "/endpoint" "" endpoint)])
 
 (defn route-match [request routes]
   (let
