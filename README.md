@@ -1,10 +1,8 @@
 # qlkit-todo-demo with Phel backend
 
-This is a "batteries included" demo of qlkit- [Try a live version here](http://forwardblockchain.com/qlkit-todomvc/)
+This is a "batteries included" demo of [qlkit](https://github.com/forward-blockchain/qlkit), the no-dependencies, 300 loc GraphQL-inspired client-server web library for Clojurescript. This particular fork and brach provides a [Phel](https://phel-lang.org) backend in addition to its Clojure counterpart. Try a live version [here](http://www.kloimwieder.com/).
 
-This particular fork and brach provides a [Phel](https://phel-lang.org) backend.
-
-Please read the [recommended qlkit introductory article](https://medium.com/p/79b7b118ddac) for a walkthrough of this application.
+The core of the qlkit backend is only 60 loc, the according [Phel code](https://github.com/kloimhardt/qlkit-todo-demo/blob/phel-backend-2/resources/public/phel-backend/qlkit/core.phel) is copied from the original Clojure version without notable changes. This [recommended qlkit introductory article](https://medium.com/p/79b7b118ddac) provides a walkthrough of the original application.
 
 ## Setup for Clojurescript development
 
@@ -23,14 +21,16 @@ and you should see an alert in the browser window.
 
 ## Setup for additional Phel backend
 
+Copy `composer.phar` into resources/public (more about Composer [here](https://getcomposer.org))
+
 ```
-copy composer.phar into resources/public
 cd resources/public
 php composer.phar install
 php -S localhost:8000
-open http://localhost:8000/
-close http://localhost:9500/
 ```
+
+Open http://localhost:8000/ (you can close http://localhost:9500/ now).
+
 ## Clojurescript compilation for poduction
 
 ```
