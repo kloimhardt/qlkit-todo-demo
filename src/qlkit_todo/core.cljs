@@ -42,7 +42,7 @@
                         [TodoItem todo])]])]))
 
 (defn remote-handler [query callback]
-  (go (let [{:keys [status body] :as result} (<! (post "endpoint" {:edn-params query}))]
+  (go (let [{:keys [status body] :as result} (<! (post "?endpoint" {:edn-params query}))]
         (if (not= status 200)
           (print "server error: " body)
           (callback (read-string body))))))

@@ -56,8 +56,8 @@
 (defstruct route [method url query page])
 
 (def routes
-  [(route "GET" "/" "" home-render)
-   (route "POST" "/endpoint" "" endpoint)])
+  [(route "GET" "/todo.php" "" home-render)
+   (route "POST" "/todo.php" "endpoint=" endpoint)])
 
 (defn route-match [request routes]
   (let
