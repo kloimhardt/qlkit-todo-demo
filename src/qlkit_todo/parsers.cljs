@@ -83,8 +83,11 @@
 
 (defmethod read :ui/anim-type
   [[_ params :as query-term] env state]
-  (println "klmreadui" query-term env state)
-  (get-in state [:ui :anim-type]))
+  (or (get-in state [:ui :anim-type]) "char-in"))
+
+(defmethod read :ui/anim-delay
+  [_ _ state]
+  (or (get-in state [:ui :anim-delay]) 6))
 
 (defmethod mutate :ui/set-ui!
   [[_ params :as query-term] env state-atom]

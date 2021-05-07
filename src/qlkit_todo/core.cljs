@@ -23,14 +23,13 @@
             [:icon-button {}
              [:icon/cancel {:on-click (fn []
                                         (transact! [:todo/delete!])
-                                        (transact! [:ui/set-ui! {:anim-type "char-out"}]))}]]]]))
+                                        (transact! [:ui/set-ui! {:anim-type "char-out" :anim-delay 60}]))}]]]]))
 
 (def text
   "Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate incidunt praesentium, rerum voluptatem in reiciendis officia harum repudiandae tempore suscipit ex ea, adipisci ab porro.")
 
-(defn make-text [css-class]
-  (let [animation-delay 6
-        f (fn [i x]
+(defn make-text [css-class animation-delay]
+  (let [f (fn [i x]
             [:span {:class css-class
                     :style {:animationDelay (str (* i animation-delay) "ms")}}
              (if (= x " ") (gstring/unescapeEntities "&nbsp;") x)])]
@@ -48,7 +47,7 @@
                                      (transact! [:todo/new! {:db/id     (random-uuid)
                                                              :todo/text new-todo}])
                                      (update-state! dissoc :new-todo)
-                                     (transact! [:ui/set-ui! {:anim-type "char-in"}])))
+                                     (transact! [:ui/set-ui! {:anim-type "char-in" :anim-delay 6}])))
                     :on-change   (fn [e]
                                    (update-state! assoc :new-todo (.-value (.-target e))))}]
            (when (seq todos)
@@ -56,11 +55,9 @@
                              [TodoItem todo])]])]))
 
 (defcomponent New
-  (query [[:ui/anim-type]])
-  (render [{:keys [:ui/anim-type] :as res} state]
-          (let [anim-type (or anim-type "char-in")]
-            (println "klmnew2" anim-type)
-            [:div (make-text anim-type)])))
+  (query [[:ui/anim-type] [:ui/anim-delay]])
+  (render [{:keys [:ui/anim-type :ui/anim-delay] :as res} state]
+          [:div (make-text anim-type anim-delay)]))
 
 (defcomponent Main
   (query [(ql/get-query TodoList)
