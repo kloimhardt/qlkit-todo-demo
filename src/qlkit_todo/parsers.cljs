@@ -80,3 +80,13 @@
              (-> by-id
                  (dissoc temp-id)
                  (assoc permanent-id (assoc (by-id temp-id) :db/id permanent-id)))))))
+
+(defmethod read :ui/anim-type
+  [[_ params :as query-term] env state]
+  (println "klmreadui" query-term env state)
+  (get-in state [:ui :anim-type]))
+
+(defmethod mutate :ui/set-ui!
+  [[_ params :as query-term] env state-atom]
+  (swap! state-atom update :ui merge params)
+  (println "klmmutateui" query-term env state-atom))
