@@ -2,7 +2,7 @@
   (:require phel\http)
   (:require phel\html :refer [html doctype])
   (:require qlkit-todo\qlkit\core :as ql)
-  # (:require qlkit-todo\parsers :as parsers)
+  #(:require qlkit-todo\parsers :as parsers) #delete does not work as state is always initialized new due to cgi call
   (:require qlkit-todo\parsers-db :as parsers-db)
   (:require qlkit-todo\little-clojure\core :as clj
             :refer [eprint atom writefile deref reset!]))
@@ -21,7 +21,7 @@
         phel-string
         (reduce (fn[s [a b]] (php/str_replace a b s))
                 edn-string
-                [["{" "@{"] ["#uuid" ""] ["," ""] ["(" "["] [")" "]"]])]
+                [["#uuid" ""] ["," ""] ["(" "["] [")" "]"]])]
     (clj/writefile fname (str "(reset! eval-atom " phel-string ")"))
     (load fname)
     (php/unlink fname)
@@ -31,28 +31,28 @@
   (let [body (php/file_get_contents "php://input")
         query (read-edn body)
         result (clj/write-edn (ql/parse-query query))]
-    @{:status  200
-      :body result}))
+    {:status  200
+     :body result}))
 
 (defn home-html [cljs-code]
   (html
     (doctype :html5)
     [:html
      [:head
-      [:meta @{:charset "UTF-8"}]
-      [:meta @{:name "viewport" :content "width=device-width, initial-scale=1"}]
-      [:link @{:rel "shortcut icon" :href "data:,"}]
-      [:link @{:rel "apple-touch-icon" :href "data:,"}]
-      [:link @{:rel "stylesheet" :href "css/style.css"}]
+      [:meta {:charset "UTF-8"}]
+      [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
+      [:link {:rel "shortcut icon" :href "data:,"}]
+      [:link {:rel "apple-touch-icon" :href "data:,"}]
+      [:link {:rel "stylesheet" :href "css/style.css"}]
       [:title "Qlkit-todo"]]
      [:body
-      [:div @{:id "app"}]
-      [:script @{:type "application/javascript"
-                 :src "./js/compiled/qlkit_todo.js"}]]]))
+      [:div {:id "app"}]
+      [:script {:type "application/javascript"
+                :src "./js/compiled/qlkit_todo.js"}]]]))
 
 (defn home-render [_]
-  @{:status 200
-    :body (home-html nil)})
+  {:status 200
+   :body (home-html nil)})
 
 (defstruct route [method url query page])
 
@@ -80,14 +80,14 @@
     ((get route :page) request)))
 
 (defn emit-response [response]
-  (let [rsp (http/create-response-from-table response)]
+  (let [rsp (http/create-response-from-map response)]
     (http/emit-response rsp)))
 
 (let [request (http/request-from-globals)
       conn (php/mysqli_connect
              "localhost" "mkloim" "mkloimpwd" "h37u320_menagerie")]
-  (ql/mount @{:parsers @{:read   parsers-db/read
-                         :mutate parsers-db/mutate}
+  (ql/mount {:parsers {:read   parsers-db/read
+                       :mutate parsers-db/mutate}
               :conn conn})
   (parsers-db/create-tables-if-necessary conn)
   (emit-response (route-match request routes))

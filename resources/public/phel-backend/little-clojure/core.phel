@@ -23,20 +23,17 @@
   (let [empty @{}]
     (reduce (fn [m [k v]] (put m k v)) empty coll)))
 
-(defn assoc [tbl k v]
-  (let [tbl-copy (into-table tbl)]
-    (put tbl-copy k v)))
+(defn into-map [coll]
+  (reduce (fn [m [k v]] (put m k v)) {} coll))
 
-(defn dissoc [tbl & ks]
-  (loop [tbl-copy (into-table tbl)
-         ks ks]
-    (if (empty? ks)
-      tbl-copy
-      (do (unset tbl-copy (first ks))
-          (recur tbl-copy (rest ks))))))
+(defn assoc [m k v]
+  (put m k v))
+
+(defn dissoc [mp & ks]
+  (reduce (fn[m k] (unset m k)) mp ks))
 
 (defn apply [f args]
-  (first (mapv f (mapv tuple args))))
+  (first (mapv f (mapv vector args))))
 
 (defn atom [val]
   (let [a @{:atom-val val}] a))
@@ -61,7 +58,10 @@
 
 (defn read-edn [edn-string]
   (let [fname (str "tmp" (php/uniqid))
-        phel-string (php/str_replace "{" "@{" edn-string)]
+        phel-string edn-string
+        # deprecated!! (php/str_replace "{" "@{" edn-string)
+        # this read-edn function also lacks removal of commas
+        ]
     (writefile fname (str "(reset! eval-atom " phel-string ")"))
     (load fname)
     (php/unlink fname)
@@ -97,3 +97,42 @@
 (defn defmulti [dispatch-fn]
   @{:dispatch-fn dispatch-fn
     :fn-map @{}})
+
+
+# ------------ tests ------------------
+(def multif (defmulti identity))
+
+(defmethod multif :a (fn [] "a"))
+
+(defmethod multif :b (fn [] "b"))
+
+(defn tests []
+  [(= (apply + [3 4]) 7)
+   (= (into-set [3 4 4]) (set 3 4))
+   (= (set-contains? (set 3 4) 4) 4)
+   (= (set-contains? (set 3 4) 2) nil)
+   (= (into-table [[:a 1] [:b 2]]) @{:a 1 :b 2})
+   (= (into-map [[:a 1] [:b 2]]) {:a 1 :b 2})
+   (= (assoc {:a 1 :b 2} :c 3)
+      {:a 1 :b 2 :c 3})
+   (= (dissoc {:a 1 :b 2 :c 4} :a :b)
+      {:c 4})
+   (let [ a (atom 8)]
+     (= (deref a)
+        8)
+     (= (swap! a inc)
+        9)
+     (= (deref a)
+        9)
+     (= (reset! a 2)
+        2)
+     (= (deref a)
+        2))
+   (= (read-edn "[1 {:a 7}]")
+      [1 {:a 7}])
+   (= (write-edn [1 {:a 7}])
+      "[1 {:a 7}]")
+   (= (dispatch multif :a) "a")
+
+   (= (dispatch multif :b) "b")
+   ])

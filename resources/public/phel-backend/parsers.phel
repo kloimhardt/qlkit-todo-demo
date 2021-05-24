@@ -5,9 +5,9 @@
 
 (def sequencer (atom 2))
 
-(def todos (atom @{0 @{:db/id 0 :todo/text "\"walk the dog\""}
-                   1 @{:db/id 1 :todo/text "\"pay the bills\""}
-                   2 @{:db/id 2 :todo/text "\"iron the curtains\""}}))
+(def todos (atom {0 {:db/id 0 :todo/text "\"walk the dog\""}
+                  1 {:db/id 1 :todo/text "\"pay the bills\""}
+                  2 {:db/id 2 :todo/text "\"iron the curtains\""}}))
 
 (def read (clj/defmulti (fn [query-term env state] (first query-term))))
 
@@ -16,7 +16,7 @@
 (clj/defmethod read :qlkit-todo/todos
   (fn [query-term env _]
     (let [[_ params] query-term
-          @{:todo-id todo-id} params]
+          {:todo-id todo-id} params]
       (if todo-id
         [(ql/parse-children query-term (assoc env :todo-id todo-id))]
         (for [id :in (keys (deref todos))]
@@ -24,29 +24,29 @@
 
 (clj/defmethod read :todo/text
   (fn [query-term env _]
-    (let [@{:todo-id todo-id} env]
+    (let [{:todo-id todo-id} env]
       (get (get (deref todos) todo-id) :todo/text))))
 
 (clj/defmethod read :db/id
   (fn [query-term env _]
-    (let [@{:todo-id todo-id} env]
+    (let [{:todo-id todo-id} env]
       (when (get (deref todos) todo-id)
         todo-id))))
 
 (clj/defmethod mutate :todo/new!
   (fn [query-term env _]
     (let [[dispatch-key params] query-term
-          @{:db/id db/id :todo/text todo/text} params
+          {:db/id db/id :todo/text todo/text} params
           permanent-id                (swap! sequencer inc)]
       (swap! todos
              |(assoc $
                permanent-id
-               @{:db/id     permanent-id
-                 :todo/text (str "\"" text "\"")}))
+               {:db/id     permanent-id
+                :todo/text (str "\"" text "\"")}))
       (eprint todos)
       [(str "#uuid \"" id "\"") permanent-id])))
 
 (clj/defmethod mutate :todo/delete!
   (fn [query-term env _]
-    (let [@{:todo-id todo-id} env]
+    (let [{:todo-id todo-id} env]
       (swap! todos |(dissoc $ todo-id)))))

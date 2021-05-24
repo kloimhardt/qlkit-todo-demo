@@ -2,7 +2,7 @@
     "name": "kloimhardt/bb-web",
     "type": "project",
     "require": {
-        "phel-lang/phel-lang": "^0.2.0"
+        "phel-lang/phel-lang": "^0.3.1"
     },
     "extra": {
         "phel": {

@@ -44,7 +44,7 @@
 (clj/defmethod read :qlkit-todo/todos
   (fn [query-term env _]
     (let [[_ params] query-term
-          @{:todo-id todo-id} params]
+          {:todo-id todo-id} params]
       (if todo-id
         [(ql/parse-children query-term (assoc env :todo-id todo-id))]
         (for [id :in (db-get-ids)]
@@ -56,7 +56,7 @@
 
 (clj/defmethod read :todo/text
   (fn [query-term env _]
-    (let [@{:todo-id todo-id} env]
+    (let [{:todo-id todo-id} env]
       (quote-string (db-get-text todo-id)))))
 
 (defn db-get-id [id]
@@ -65,7 +65,7 @@
 
 (clj/defmethod read :db/id
   (fn [query-term env _]
-    (let [@{:todo-id todo-id} env]
+    (let [{:todo-id todo-id} env]
       (when (db-get-id todo-id)
         todo-id))))
 
@@ -80,7 +80,7 @@
 (clj/defmethod mutate :todo/new!
   (fn [query-term env _]
     (let [[dispatch-key params] query-term
-          @{:db/id db/id :todo/text todo/text} params
+          {:db/id db/id :todo/text todo/text} params
           permanent-id (db-insert-text todo/text)]
       [(make-uuid id) permanent-id])))
 
@@ -89,5 +89,5 @@
 
 (clj/defmethod mutate :todo/delete!
   (fn [query-term env _]
-    (let [@{:todo-id todo-id} env]
+    (let [{:todo-id todo-id} env]
       (db-delete-record todo-id))))

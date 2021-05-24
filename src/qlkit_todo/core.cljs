@@ -64,7 +64,7 @@
           (ql/get-query New)])
   (render [res state]
           [:div
-           [New res]
+           ;; [New res]
            [TodoList res]]))
 
 (defn remote-handler [query callback]

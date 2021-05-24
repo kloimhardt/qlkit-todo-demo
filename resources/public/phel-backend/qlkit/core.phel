@@ -5,7 +5,7 @@
 (defn safe-deref [state]
   (if (atom? state) (deref state) state))
 
-(def mount-info (atom @{}))
+(def mount-info (atom {}))
 
 (defn warning [msg]
   (eprint msg))
@@ -16,8 +16,8 @@
   (= "!" (php/substr (str (first query-term)) -1)))
 
 (defn parse-query-term [query-term env]
-  (let [@{:state state :parsers parsers} (deref mount-info)
-        @{:read read :mutate mutate :remote remote} parsers
+  (let [{:state state :parsers parsers} (deref mount-info)
+        {:read read :mutate mutate :remote remote} parsers
         mutate-fn (clj/get-fn mutate query-term env state)]
     (if (or (not (mutation-query-term? query-term))
             mutate-fn
@@ -32,13 +32,13 @@
                     (print-str query-term))))))
 
 (defn parse-query [query & [env]]
-  (let [env (or env @{})]
+  (let [env (or env {})]
     (doall (for [query-term :in query]
              (parse-query-term query-term env)))))
 
 (defn parse-query-into-map [query env]
-  (clj/into-table
-    (mapv tuple (mapv first query) (parse-query query env))))
+  (clj/into-map
+    (mapv vector (mapv first query) (parse-query query env))))
 
 (defn parse-children [query-term env]
   (parse-query-into-map (drop 2 query-term) (assoc env :qlkit/parent-env (assoc env :qlkit/query-key (first query-term)))))
@@ -69,13 +69,13 @@
   (clj/remove-all-methods mutate)
   (clj/remove-all-methods remote)
   (fun)
-  (parse-query-term query-term @{}))
+  (parse-query-term query-term {}))
 
 (defn parse-query-test []
-  (reset! mount-info @{:parsers @{:read   read
-                                  :mutate mutate
-                                  :remote remote}
-                       :state @{}})
+  (reset! mount-info {:parsers {:read   read
+                                :mutate mutate
+                                :remote remote}
+                       :state {}})
   [(is-equal (parse-with (fn []
                            (clj/defmethod read :foo
                              (fn [query-term env state]
@@ -93,7 +93,7 @@
 
    (is-equal (parse-with (fn [] nil)
                          [:foo])
-             "No method in multimethod: read :foo")
+             "No method in multimethod for: :foo")
    (is-equal
      (mapv |(dissoc $ ::qlkit/env ::qlkit/query)
           (parse-with (fn []
@@ -103,10 +103,10 @@
                               (parse-children query-term (assoc env :animal-id animal-id)))))
                         (clj/defmethod read :name
                           (fn [query-term env state]
-                            (get @{0 :duck 1 :cat 2 :dog} (:animal-id env)))))
-                      [:animals @{} [:name]]))
-     @[@{:name :duck} @{:name :cat} @{:name :dog}])])
+                            (get {0 :duck 1 :cat 2 :dog} (:animal-id env)))))
+                      [:animals {} [:name]]))
+     [{:name :duck} {:name :cat} {:name :dog}])])
 
 (defn mount-test []
-  (mount @{:state (atom 5)})
+  (mount {:state (atom 5)})
   (is-equal (deref (:state (deref mount-info))) 5))
