@@ -73,31 +73,31 @@
        (php/str_replace "@[" "[")))
 
 (defn get-fn1 [f argsv]
-  (if (and (table? f) (= (into-set (keys f)) (set :dispatch-fn :fn-map)))
-    (let [@{:fn-map fn-map :dispatch-fn dispatch-fn} f
-          dispatch-val (apply dispatch-fn argsv)]
-      @{:fun (get fn-map dispatch-val) :dispatch-val dispatch-val})
-    @{:fun f :dispatch-val nil}))
+  (let [af (if (atom? f) (deref f) f)]
+    (if (and (hash-map? af) (= (into-set (keys af)) (set :dispatch-fn :fn-map)))
+      (let [{:fn-map fn-map :dispatch-fn dispatch-fn} af
+            dispatch-val (apply dispatch-fn argsv)]
+        {:fun (get fn-map dispatch-val) :dispatch-val dispatch-val})
+      {:fun f :dispatch-val nil})))
 
 (defn get-fn [f & args]
   (:fun (get-fn1 f args)))
 
 (defn dispatch [f & args]
-  (let [@{:fun fun :dispatch-val dispatch-val} (get-fn1 f args)]
+  (let [{:fun fun :dispatch-val dispatch-val} (get-fn1 f args)]
     (if fun
       (apply fun args)
       (eprint (str "No method in multimethod for: " dispatch-val)))))
 
 (defn remove-all-methods [mfun]
-  (put mfun :fn-map @{}))
+  (swap! mfun |(put $ :fn-map {})))
 
 (defn defmethod [mfun dispatch-key fn]
-  (put (get mfun :fn-map) dispatch-key fn))
+  (swap! mfun (fn[m] (put-in m [:fn-map dispatch-key] fn))))
 
 (defn defmulti [dispatch-fn]
-  @{:dispatch-fn dispatch-fn
-    :fn-map @{}})
-
+  (atom {:dispatch-fn dispatch-fn
+         :fn-map {}}))
 
 # ------------ tests ------------------
 (def multif (defmulti identity))

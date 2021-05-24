@@ -91,5 +91,4 @@
 
 (defmethod mutate :ui/set-ui!
   [[_ params :as query-term] env state-atom]
-  (swap! state-atom update :ui merge params)
-  (println "klmmutateui" query-term env state-atom))
+  (swap! state-atom update :ui merge params))
