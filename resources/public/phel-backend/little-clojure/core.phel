@@ -32,9 +32,6 @@
 (defn dissoc [mp & ks]
   (reduce (fn[m k] (unset m k)) mp ks))
 
-(defn apply [f args]
-  (first (mapv f (mapv vector args))))
-
 (defn atom [val]
   (let [a @{:atom-val val}] a))
 
