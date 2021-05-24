@@ -14,22 +14,9 @@
 #     mkloimpwd
 # use h37u320_menagerie
 
-(def eval-atom (atom nil))
-
-(defn read-edn [edn-string]
-  (let [fname (str "tmp" (php/uniqid))
-        phel-string
-        (reduce (fn[s [a b]] (php/str_replace a b s))
-                edn-string
-                [["#uuid" ""] ["," ""] ["(" "["] [")" "]"]])]
-    (clj/writefile fname (str "(reset! eval-atom " phel-string ")"))
-    (load fname)
-    (php/unlink fname)
-    (deref eval-atom)))
-
 (defn endpoint [_]
   (let [body (php/file_get_contents "php://input")
-        query (read-edn body)
+        query (clj/read-edn body)
         result (clj/write-edn (ql/parse-query query))]
     {:status  200
      :body result}))

@@ -51,18 +51,14 @@
 (defn atom? [a]
   (and (table? a) (:atom-val a)))
 
-(def eval-atom (atom nil))
-
 (defn read-edn [edn-string]
-  (let [fname (str "tmp" (php/uniqid))
-        phel-string edn-string
-        # deprecated!! (php/str_replace "{" "@{" edn-string)
-        # this read-edn function also lacks removal of commas
-        ]
-    (writefile fname (str "(reset! eval-atom " phel-string ")"))
-    (load fname)
-    (php/unlink fname)
-    (deref eval-atom)))
+  (let [comma-outside-string "/,(?=(?:(?:[^\"]*\"){2})*[^\"]*$)/"
+        str1 (php/preg_replace comma-outside-string "" edn-string)
+        phel-string
+        (reduce (fn[s [a b]] (php/str_replace a b s))
+                str1
+                [["#uuid" ""] ["(" "["] [")" "]"]])]
+    (php/-> (php/new \Phel\Compiler\CompilerFacade) (eval phel-string))))
 
 (defn write-edn [phel-data]
   (->> (print-str phel-data)
