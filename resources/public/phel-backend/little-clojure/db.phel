@@ -1,4 +1,0 @@
-(ns qlkit-todo\little-clojure\db)
-
-(defn query [conn qry]
-  (->  (php/mysqli_query conn qry) php/mysqli_fetch_all))

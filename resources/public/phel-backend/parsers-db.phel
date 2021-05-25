@@ -1,8 +1,7 @@
 (ns qlkit-todo\parsers-db
   (:require qlkit-todo\qlkit\core :as ql)
   (:require qlkit-todo\little-clojure\core :as clj
-            :refer [eprint atom deref assoc dissoc swap! mapv])
-  (:require qlkit-todo\little-clojure\db))
+            :refer [eprint atom deref assoc dissoc swap! mapv]))
 
 (def dev false)
 
