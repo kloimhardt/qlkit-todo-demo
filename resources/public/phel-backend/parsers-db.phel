@@ -9,19 +9,20 @@
 # (def dev true)
 # (load "./phel-backend/parsers-db.phel")
 
-(defn conn-mock []
-  (php/mysqli_connect
-    "localhost" "mkloim" "mkloimpwd" "h37u320_menagerie"))
+(defn pdo-mock []
+  (let [dsn "mysql:host=localhost;dbname=h37u320_menagerie;charset=UTF8"]
+    (php/new "\\PDO" dsn "mkloim" "mkloimpwd")))
 
-(defn conn [] (:conn (deref ql/mount-info)))
+
+(defn pdo [] (:pdo (deref ql/mount-info)))
 
 (defn quote-string [text] (str "\"" text "\""))
 
 (defn query [txt]
-  (php/mysqli_query (if dev (conn-mock) (conn)) txt))
+  (php/-> (if dev (pdo-mock) (pdo)) (query txt)))
 
-(defn create-tables-if-necessary [conn]
-  (let [tables2d (db/query conn "show tables")
+(defn create-tables-if-necessary []
+  (let [tables2d (php/-> (query "show tables") (fetchAll))
         table-set (clj/into-set (mapv first tables2d))
         new-table-name "todos"
         qry (php/sprintf
@@ -32,7 +33,7 @@
               new-table-name)]
     (when-not (clj/set-contains? table-set new-table-name)
       (eprint (str "Creating new table " new-table-name))
-      (php/mysqli_query conn qry))))
+      (query qry))))
 
 (def read (clj/defmulti (fn [query-term env state] (first query-term))))
 
@@ -85,7 +86,8 @@
       [(make-uuid id) permanent-id])))
 
 (defn db-delete-record [id]
-  (query (str "delete from todos where id=" id)))
+  (query (str "delete from todos where id=" id))
+  true)
 
 (clj/defmethod mutate :todo/delete!
   (fn [query-term env _]

@@ -71,11 +71,10 @@
     (http/emit-response rsp)))
 
 (let [request (http/request-from-globals)
-      conn (php/mysqli_connect
-             "localhost" "mkloim" "mkloimpwd" "h37u320_menagerie")]
+      dsn "mysql:host=localhost;dbname=h37u320_menagerie;charset=UTF8"
+      pdo (php/new "\\PDO" dsn "mkloim" "mkloimpwd")]
   (ql/mount {:parsers {:read   parsers-db/read
                        :mutate parsers-db/mutate}
-              :conn conn})
-  (parsers-db/create-tables-if-necessary conn)
-  (emit-response (route-match request routes))
-  (php/mysqli_close conn))
+             :pdo pdo})
+  (parsers-db/create-tables-if-necessary)
+  (emit-response (route-match request routes)))
