@@ -2,7 +2,7 @@
   (:require qlkit-todo\qlkit\core :as ql)
   (:require qlkit-todo\little-clojure\core :as clj
             :refer [eprint atom deref assoc dissoc swap! mapv name])
-  (:require qlkit-todo\little-clojure\honey-sql :as hsql))
+  (:require qlkit-todo\little-clojure\honey-sql :as hsql)) #just a glimpse of honey-sql
 
 (def dev false)
 

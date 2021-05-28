@@ -1,6 +1,9 @@
 (ns qlkit-todo\little-clojure\honey-sql
   (:require qlkit-todo\little-clojure\core :as clj
             :refer [name]))
+# This is just a proof of concept for honey-sql in Phel.
+# https://github.com/seancorfield/honeysql
+# No intention to make it a generally useful library
 
 # (load "./phel-backend/little-clojure/honey-sql.phel")
 
