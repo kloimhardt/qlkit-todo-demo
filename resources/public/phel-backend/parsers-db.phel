@@ -29,10 +29,10 @@
         table-set (clj/into-set (mapv first tables2d))
         new-table-name :todos
         qry {:create-table new-table-name
-            :with-columns
-            [[:id :serial [:primary-key]]
-             [:text :text [:not nil]]
-             [:timestamp :timestamp [:not nil] [:default [:now]]]]}]
+             :with-columns
+             [[:id :serial [:primary-key]]
+              [:text :text [:not nil]]
+              [:timestamp :timestamp [:not nil] [:default [:now]]]]}]
     (when-not (clj/set-contains? table-set (name new-table-name))
       (eprint (str "Creating new table " new-table-name))
       (query qry))))
