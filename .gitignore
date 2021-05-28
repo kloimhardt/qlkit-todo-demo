@@ -13,3 +13,13 @@ pom.xml
 .nrepl-port
 checkouts
 .cpcache
+
+.rebel_readline_history
+resources/public/.ac-php-conf.json
+resources/public/.phel-repl-history
+resources/public/composer.lock
+resources/public/composer.phar
+resources/public/klmlog.txt
+resources/public/phel-backend/.DS_Store
+resources/public/phel-backend/little-clojure/.DS_Store
+resources/public/vendor/
