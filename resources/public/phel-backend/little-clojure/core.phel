@@ -32,6 +32,9 @@
 (defn dissoc [mp & ks]
   (reduce (fn[m k] (unset m k)) mp ks))
 
+(defn name [kw]
+  (php/substr (str kw) 1))
+
 (defn atom [val]
   (let [a @{:atom-val val}] a))
 
